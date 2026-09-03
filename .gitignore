@@ -1,0 +1,13 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# CS61A OK generated files
+.ok_history
+.ok_storage
+
+# Virtual environment
+.venv/
+
+# macOS
+.DS_Store
