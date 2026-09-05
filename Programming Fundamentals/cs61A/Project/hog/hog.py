@@ -356,14 +356,23 @@ def boar_strategy(score, opponent_score, threshold=11, num_rolls=6):
     points, and returns NUM_ROLLS otherwise. Ignore score and Sus Fuss.
     """
     # BEGIN PROBLEM 10
-    return num_rolls  # Remove this line once implemented.
+    score_not_rolling = boar_brawl(score, opponent_score) # 计算不投掷骰子时的得分
+    if score_not_rolling >= threshold: # 如果不投掷骰子时的
+        return 0 # 返回0,不投掷骰子
+    else:
+        return num_rolls # 返回num_rolls,投掷骰子
     # END PROBLEM 10
 
 
 def sus_strategy(score, opponent_score, threshold=11, num_rolls=6):
     """This strategy returns 0 dice when your score would increase by at least threshold."""
     # BEGIN PROBLEM 11
-    return num_rolls  # Remove this line once implemented.
+    zerotime_score = sus_update(0, score, opponent_score) # 计算不投掷骰子时的得分
+    score_increase = zerotime_score - score # 计算得分增加量
+    if score_increase >= threshold: # 如果得分增加量大于等于�
+        return 0 # 返回0,不投掷骰子
+    else:
+        return num_rolls # 返回num_rolls,投掷骰子
     # END PROBLEM 11
 
 
