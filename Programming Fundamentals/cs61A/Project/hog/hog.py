@@ -177,7 +177,19 @@ def play(strategy0, strategy1, update,
     """
     who = 0  # Who is about to take a turn, 0 (first) or 1 (second)
     # BEGIN PROBLEM 5
-    "*** YOUR CODE HERE ***"
+    while score0 < goal and score1 < goal:
+        if who == 0:
+            # 确定玩家0的投掷次数
+            num_rolls = strategy0(score0, score1)
+            # 更新玩家分数
+            score0 = update(num_rolls, score0, score1, dice)
+            who = 1 # 切换玩家
+        else:
+            # 确定玩家1的投掷次数
+            num_rolles = strategy1(score1, score0)
+            # 更新玩家1的分数
+            score1 = update(num_rolles, score1, score0, dice)  
+            who = 0 # 切换玩家
     # END PROBLEM 5
     return score0, score1
 
@@ -202,7 +214,9 @@ def always_roll(n):
     """
     assert n >= 0 and n <= 10
     # BEGIN PROBLEM 6
-    "*** YOUR CODE HERE ***"
+    def  strategy(score,opponent_score): 
+         return n
+    return strategy
     # END PROBLEM 6
 
 
@@ -233,7 +247,22 @@ def is_always_roll(strategy, goal=GOAL):
     False
     """
     # BEGIN PROBLEM 7
-    "*** YOUR CODE HERE ***"
+    score = 0
+    opponent_score = 0
+    # 确定标准策略的投掷次数
+    standard_rolls = strategy(score, opponent_score)
+    # 外层循环代表玩家
+    while score < goal :
+        # 内层循环代表对手
+        while opponent_score < goal :
+            # 检查策略是否在不同的分数下返回相同的投掷次数
+            if strategy(score, opponent_score) != standard_rolls:
+                return False
+            opponent_score += 1
+        score += 1
+        # 重置对手分数为0，开始下一轮
+        opponent_score = 0
+    return True
     # END PROBLEM 7
 
 
@@ -249,7 +278,14 @@ def make_averaged(original_function, samples_count=1000):
     3.0
     """
     # BEGIN PROBLEM 8
-    "*** YOUR CODE HERE ***"
+    def averaged_function(*args):
+        total = samples_count
+        result = 0
+        while total > 0: 
+            result += original_function(*args)
+            total -= 1
+        return result / samples_count
+    return averaged_function
     # END PROBLEM 8
 
 
@@ -263,7 +299,19 @@ def max_scoring_num_rolls(dice=six_sided, samples_count=1000):
     1
     """
     # BEGIN PROBLEM 9
-    "*** YOUR CODE HERE ***"
+    
+    averaged_roll_dice = make_averaged(roll_dice, samples_count) # 求平均
+    best_average = averaged_roll_dice(1, dice) # 目前最高平均分
+    best_num_rolls = 1 # 目前最佳投掷次数
+    rolls_count = 2 # 投掷次数计数器,从2开始,因为1已经计算过了
+    while rolls_count <= 10:
+        current_average = averaged_roll_dice(rolls_count, dice) # 当前投递次数的平均分
+        if current_average > best_average: # 如果当前平均分更高
+            best_average = current_average # 更新最高平均分
+            best_num_rolls = rolls_count # 更新最佳投掷次数
+        rolls_count += 1 # 投掷次数加1
+    return best_num_rolls
+
     # END PROBLEM 9
 
 
