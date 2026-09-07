@@ -1,5 +1,3 @@
-# Python 五部分精简复习笔记
-
 ## 1. Iteration Example：循环与斐波那契数列
 
 斐波那契数列：
