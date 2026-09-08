@@ -1,4 +1,4 @@
-# 高阶函数到 Currying 之前：复习笔记
+# 高阶函数、环境、闭包与 Currying：完整复习笔记
 
 这份笔记总结以下内容：
 
@@ -9,8 +9,9 @@
 5. 嵌套函数与闭包
 6. 函数组合
 7. lambda 表达式
+8. Currying（柯里化）
 
-Currying（柯里化）暂时不在这份笔记中。它会在下一次学习时建立在这些知识之上。
+这些内容共同回答一个核心问题：Python 如何把函数当作值，并通过多层 environment 分阶段保存和使用参数？
 
 ---
 
@@ -717,7 +718,262 @@ result = 25
 
 ---
 
-## 11. 根据学习过程整理出的常见误区
+## 11. Currying（柯里化）
+
+Currying 把一个接收多个参数的函数，转换成一连串每次只接收一个参数的函数。
+
+普通的双参数调用：
+
+```python
+add(10, 5)
+```
+
+柯里化后的调用：
+
+```python
+curried_add(10)(5)
+```
+
+可以先记成：
+
+```text
+f(x, y) → curried_f(x)(y)
+```
+
+Currying 不负责具体的加法或乘法。它改变的是函数接收参数的方式。
+
+### 11.1 make_adder：从闭包走向 Currying
+
+```python
+def make_adder(n):
+    return lambda k: n + k
+```
+
+调用：
+
+```python
+make_adder(2)(3)  # 5
+```
+
+分开写：
+
+```python
+add_two = make_adder(2)
+result = add_two(3)
+```
+
+第一次调用：
+
+```text
+make_adder(2) → 返回一个函数，这个函数记住 n = 2
+```
+
+第二次调用：
+
+```text
+add_two(3) → k = 3 → n + k → 5
+```
+
+必须区分：
+
+```text
+add_two    → 函数值
+add_two(3) → 调用表达式，值为 5
+```
+
+`make_adder` 展示了分阶段接收参数的结构。`curry2` 会把这个结构推广到任意双参数函数。
+
+### 11.2 curry2：转换双参数函数
+
+先明确要转换的函数：
+
+```python
+def add(x, y):
+    return x + y
+```
+
+`curry2` 的嵌套函数写法：
+
+```python
+def curry2(f):
+    def g(x):
+        def h(y):
+            return f(x, y)
+
+        return h
+
+    return g
+```
+
+使用：
+
+```python
+curried_add = curry2(add)
+add_ten = curried_add(10)
+result = add_ten(5)
+```
+
+结果：
+
+```python
+result == 15
+```
+
+也可以写成一个连续调用：
+
+```python
+curry2(add)(10)(5)  # 15
+```
+
+Python 将它理解为：
+
+```python
+((curry2(add))(10))(5)
+```
+
+各阶段得到的值：
+
+| 表达式 | 参数绑定 | 得到的值 |
+|---|---|---|
+| `curry2(add)` | `f → add` | 函数 `g` |
+| `curry2(add)(10)` | `x → 10` | 函数 `h` |
+| `curry2(add)(10)(5)` | `y → 5` | `add(10, 5)` 的结果 `15` |
+
+`g(10)` 是调用表达式；它的返回值是函数 `h`。因此下面两句话需要分清：
+
+```text
+过程：调用 g(10)
+结果：得到 h 函数
+```
+
+### 11.3 curry2 的 environment 与闭包
+
+执行：
+
+```python
+curry2(add)(10)(5)
+```
+
+第一次调用 `curry2(add)`：
+
+```text
+f1：curry2 frame
+├── f → add function
+└── parent → Global
+
+g function
+├── 代码：接收 x，定义并返回 h
+└── parent → f1
+```
+
+第二次调用 `g(10)`：
+
+```text
+f2：g frame
+├── x → 10
+└── parent → f1
+
+h function
+├── 代码：return f(x, y)
+└── parent → f2
+```
+
+第三次调用 `h(5)`：
+
+```text
+f3：h frame
+├── y → 5
+└── parent → f2
+```
+
+执行 `f(x, y)` 时的名称查找：
+
+```text
+y：在 f3 中找到 5
+x：f3 中没有 → 在 f2 中找到 10
+f：f3、f2 中没有 → 在 f1 中找到 add
+```
+
+因此：
+
+```text
+f(x, y) → add(10, 5) → 15
+```
+
+完整 environment 链：
+
+```text
+h 调用 frame f3
+→ g 调用 frame f2
+→ curry2 调用 frame f1
+→ Global frame
+```
+
+这里连续发生三次用户定义函数调用，所以创建了三个调用 frame。`g` 和 `h` 能保存前面阶段的参数，是因为它们都是闭包。
+
+### 11.4 Lambda 写法
+
+`curry2` 可以压缩成：
+
+```python
+curry2 = lambda f: lambda x: lambda y: f(x, y)
+```
+
+理解时不要一次读完整行，而要逐层绑定：
+
+```python
+curry2(add)
+# f = add
+# 得到：lambda x: lambda y: add(x, y)
+```
+
+```python
+curry2(add)(10)
+# x = 10
+# 得到：lambda y: add(10, y)
+```
+
+```python
+curry2(add)(10)(5)
+# y = 5
+# 计算：add(10, 5) → 15
+```
+
+可以使用“每传入一个参数，就去掉一层最外部 lambda”来辅助理解，但更准确的说法是：
+
+> 调用当前函数，绑定它的形参，然后得到它返回的下一层函数或最终结果。
+
+### 11.5 make_adder 与 curry2(add) 的关系
+
+```python
+def make_adder(n):
+    return lambda k: n + k
+```
+
+```python
+curried_add = curry2(add)
+```
+
+它们可以具有相同的调用行为：
+
+```python
+make_adder(2)(3)    # 5
+curried_add(2)(3)   # 5
+```
+
+区别在于：
+
+```text
+make_adder    → 专门构造“加 n”的函数
+curry2        → 把任意双参数函数转换成两次单参数调用
+curry2(add)   → 转换后得到与 make_adder 相同行为的函数
+```
+
+Currying 最早由 Moses Schönfinkel 提出，后来由 Haskell Curry 重新发现并推广。
+
+---
+
+## 12. 根据学习过程整理出的常见误区
 
 ### 误区一：Lambda 表达式直接得到计算结果
 
@@ -800,9 +1056,53 @@ square(4)
 
 以上写法都可以调用 `square`。
 
+### 误区九：curry2(add) 已经得到加法结果
+
+错误理解：
+
+```text
+curry2(add) → 一个数字
+```
+
+正确理解：
+
+```text
+curry2(add)        → 返回函数 g
+curry2(add)(10)    → 返回函数 h
+curry2(add)(10)(5) → 返回数字 15
+```
+
+### 误区十：g(10) 就是函数 g
+
+必须区分函数值和调用表达式：
+
+```text
+g     → 函数值
+g(10) → 调用 g；在 curry2 的例子中，返回函数 h
+```
+
+因此：
+
+```python
+step = g(10)
+```
+
+表示 `step` 绑定到 `g(10)` 的返回值 `h`，不是绑定到 `g`。
+
+### 误区十一：Currying 只是从左边删除 lambda 文本
+
+“从左边去掉一层”可以帮助阅读，但真实过程是：
+
+```text
+调用最外层函数
+→ 把实参绑定到形参
+→ 执行函数体
+→ 返回下一层函数或最终结果
+```
+
 ---
 
-## 12. 一页速记版
+## 13. 一页速记版
 
 ```text
 1. 函数也是值。
@@ -833,11 +1133,21 @@ square(4)
 11. f(g(x)) 先计算 g(x)，再把结果传给 f。
 
 12. 高阶函数把行为也当作数据来传递或返回。
+
+13. Currying 改变函数接收参数的形式：
+    f(x, y) → curried_f(x)(y)
+
+14. 每次柯里化调用只绑定当前最外层函数的一个参数。
+
+15. curry2(f)(x)(y) 的分组是：
+    ((curry2(f))(x))(y)
+
+16. 中间调用返回函数；最后一层调用才得到最终计算结果。
 ```
 
 ---
 
-## 13. 明天开始 Currying 前，只需确认四件事
+## 14. 综合代码检查表
 
 看到一段代码时，能够回答：
 
@@ -845,38 +1155,66 @@ square(4)
 2. 哪些地方只是创建、传递或返回函数，哪些地方真正调用了函数？
 3. 每次函数调用创建的 frame 中有哪些局部绑定？
 4. 当前函数查找名称时，它的 parent 链是什么？
-
-Currying 会把多个单参数函数和多层闭包组合起来。只要以上四点清楚，就能理解它为什么能够分阶段接收参数。
+5. 一个连续调用表达式应该如何加括号？
+6. 每一层调用返回的是函数还是最终数据？
+7. Currying 的每个参数分别保存在哪一层 frame 中？
 
 ---
 
-## 14. 明天的快速热身题
+## 15. Currying 综合练习
 
-不必现在完成。明天学习 Currying 前，可以先看下面的完整代码：
+完整代码：
 
 ```python
-def make_multiplier(n):
-    return lambda x: x * n
+def multiply(x, y):
+    return x * y
 
 
-times_three = make_multiplier(3)
+def curry2(f):
+    def g(x):
+        def h(y):
+            return f(x, y)
+
+        return h
+
+    return g
+
+
+curried_multiply = curry2(multiply)
+times_three = curried_multiply(3)
 result = times_three(4)
 ```
 
 尝试回答：
 
-1. `make_multiplier(3)` 返回函数还是数字？
-2. `times_three` 绑定到什么？
-3. 总共发生几次用户定义函数调用？
-4. `x` 和 `n` 分别在哪个 frame 中？
-5. `result` 是多少？
+1. `curry2(multiply)` 返回函数还是数字？
+2. `curried_multiply(3)` 返回什么？
+3. `f`、`x`、`y` 分别绑定到什么？
+4. 三个参数分别位于哪一层调用 frame？
+5. 总共发生几次用户定义函数调用？
+6. `result` 是多少？
 
 参考答案：
 
 ```text
-1. 返回 lambda 创建的函数。
-2. times_three 绑定到这个 lambda 函数。
-3. 两次：make_multiplier(3) 和 times_three(4)。
-4. x 在 lambda 调用 frame；n 在 make_multiplier frame。
-5. result = 12。
+1. 返回函数 g。
+2. 返回函数 h；times_three 绑定到 h。
+3. f → multiply，x → 3，y → 4。
+4. f 在 curry2 frame，x 在 g frame，y 在 h frame。
+5. 三次：curry2(multiply)、g(3) 和 h(4)。
+6. multiply(3, 4) → 12，所以 result = 12。
+```
+
+这段代码与手写的闭包：
+
+```python
+def make_multiplier(n):
+    return lambda x: n * x
+```
+
+具有对应关系：
+
+```python
+make_multiplier(3)(4)       # 12
+curry2(multiply)(3)(4)      # 12
 ```
