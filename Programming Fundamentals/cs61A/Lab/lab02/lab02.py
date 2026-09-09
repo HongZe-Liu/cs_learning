@@ -6,14 +6,16 @@ def composite_identity(f, g):
     and vice versa.
 
     >>> add_one = lambda x: x + 1        # adds one to x
-    >>> square = lambda x: x**2          # squares x [returns x^2]
+    >>> square = lambda x: x**2          # squares x [returns x^2]f(g(x)) == g(f(x))
     >>> b1 = composite_identity(square, add_one)
-    >>> b1(0)                            # (0 + 1) ** 2 == 0 ** 2 + 1
+    >>> b1(0)                            # (0 + 1) ** 2 == 0 ** 2 + 1x
     True
     >>> b1(4)                            # (4 + 1) ** 2 != 4 ** 2 + 1
     False
     """
-    "*** YOUR CODE HERE ***"
+    def check(x):
+       return f(g(x)) == g(f(x))
+    return check
 
 
 def sum_digits(y):
@@ -60,6 +62,17 @@ def count_cond(condition):
     8
     """
     "*** YOUR CODE HERE ***"
+    def count(n):
+        i = 1 
+        total = 0
+        while i <= n:
+            if condition(n,i):
+                total += 1
+                i += 1
+            else:
+                i += 1
+        return total
+    return count
 
 
 def multiple(a, b):
@@ -70,7 +83,11 @@ def multiple(a, b):
     >>> multiple(14, 21)
     42
     """
-    "*** YOUR CODE HERE ***"
+    n = a # 将n作为检查的公倍数
+    while n % b != 0:
+        n += a # 每次递增a
+    return n
+
 
 
 
@@ -100,5 +117,20 @@ def cycle(f1, f2, f3):
     >>> do_two_cycles(1)
     19
     """
-    "*** YOUR CODE HERE ***"
+    def g(n):
+        def h(x):
+            i = 0 
+            while i < n:
+                if i % 3  == 0:
+                    x = f1(x)
+                elif i % 3 == 1:
+                    x = f2(x)
+                else:
+                    x = f3(x)
+                i += 1
+            return x
+        return h
+    return g
+         
+
 
