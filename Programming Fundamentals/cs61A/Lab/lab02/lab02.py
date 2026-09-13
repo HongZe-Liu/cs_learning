@@ -117,6 +117,7 @@ def cycle(f1, f2, f3):
     >>> do_two_cycles(1)
     19
     """
+    # f1 = +1, F2 = *2, F3 = +3
     def g(n):
         def h(x):
             i = 0 
@@ -134,3 +135,4 @@ def cycle(f1, f2, f3):
          
 
 
+    

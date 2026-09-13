@@ -1,16 +1,3 @@
-# Python Lecture 复习笔记：Lambda、Return、抽象与错误
-
-本 lecture 共 4 个部分：
-
-1. Lambda Expressions and Environment Diagrams
-2. Return、Search and Inverse Functions
-3. Functional Abstraction and Naming
-4. Errors and Tracebacks
-
----
-
-## 第一部分：Lambda 与环境图
-
 ### 1. Lambda 表达式创建函数对象
 
 ```python
